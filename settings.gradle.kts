@@ -1,1 +1,1 @@
-rootProject.name = "ShopApp"
+rootProject.name = "BirdApp"
