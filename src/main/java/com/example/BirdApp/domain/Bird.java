@@ -28,12 +28,12 @@ public class Bird {
 
 
     public Bird() {}
-    public Bird(String birdName, String sciName, String habitat, String family, String cnsrvStatus){
+    public Bird(String birdName, String sciName, List<String> habitat, String family, String cnsrvStatus){
         this.birdName = birdName;
         this.sciName = sciName;
         this.habitat = habitat;
         this.family = family;
-        this.cnrvStatus = cnsrvStatus;
+        this.cnsrvStatus = cnsrvStatus;
     }
 
     // Getters and Setters
@@ -77,11 +77,11 @@ public class Bird {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return Objects.equals(userId, user.userId);
+        Bird bird = (Bird) o;
+        return Objects.equals(birdId, bird.birdId);
     }
     @Override
     public int hashCode() {
-        return Objects.hash(userId);
+        return Objects.hash(birdId);
     }
 }
