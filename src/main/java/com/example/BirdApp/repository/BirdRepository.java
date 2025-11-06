@@ -1,8 +1,9 @@
-package com.example.BirdApp;
+package com.example.BirdApp.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import com.example.BirdApp.domain.Bird;
-import java.util.List;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface BirdRepository extends JpaRepository<Bird, Long> {
 
 }

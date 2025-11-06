@@ -1,9 +1,9 @@
 package com.example.BirdApp.domain;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+// import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
+// import java.time.Instant;
+// import java.util.HashSet;
+// import java.util.Set;
 import java.util.Objects;
 import java.util.List;
 
