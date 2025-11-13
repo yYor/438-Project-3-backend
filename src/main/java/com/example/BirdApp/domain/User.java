@@ -8,17 +8,21 @@ import java.util.Objects;
 public class User {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "userid")
+    @Column(name = "userId")
     private Long userId;
-
+    @Column(name="name")
     private String name;
-    @Column(unique = true)
-
+    @Column(name="email", unique = true)
     private String email;
+    @Column(name="oauthProvider")
     private String oauthProvider;
+    @Column(name="oauthId")
     private String oauthId;
+    @Column(name="profilePicture")
     private String profilePicture;
+    @Column(name="role")
     private String role;
+    @Column(name="createdAt")
     private Instant createdAt;
 
     public User() {
