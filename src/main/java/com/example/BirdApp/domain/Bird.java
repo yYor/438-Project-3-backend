@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Objects;
-import java.util.List;
 
 @Entity
 @Table(name = "birds")
@@ -16,19 +15,24 @@ public class Bird {
     private Long birdId;
 
     //ex: Grey-headed chickadee 
+    @Column(name = "birdName")
     private String birdName;
     //ex: Poecile cinctus
+    @Column(name = "sciName")
     private String sciName;
-    //ex: Alaska, Scandinavia: something else might work better but its a list for now, more descriptive locations might be better
-    private List<String> habitat;
+    //ex: Alaska, Scandinavia: more descriptive locations might be better
+    @Column(name = "habitat")
+    private String habitat;
     //ex: Paridae, might be unecessary but i am covering our bases.
+    @Column(name = "family")
     private String family;
     //ex: Least Concern, Conservation status, again maybe unecessary but its here
+    @Column(name = "cnsrvStatus")
     private String cnsrvStatus;
 
 
     public Bird() {}
-    public Bird(String birdName, String sciName, List<String> habitat, String family, String cnsrvStatus){
+    public Bird(String birdName, String sciName, String habitat, String family, String cnsrvStatus){
         this.birdName = birdName;
         this.sciName = sciName;
         this.habitat = habitat;
@@ -55,10 +59,10 @@ public class Bird {
     public void setsciName(String sciName) {
         this.sciName = sciName;
     }
-    public List<String> getHabitat() {
+    public String getHabitat() {
         return habitat;
     }
-    public void setHabitat(List<String> habitat) {
+    public void setHabitat(String habitat) {
         this.habitat = habitat;
     }
     public String getFamily() {
