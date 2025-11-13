@@ -5,6 +5,7 @@ import com.example.BirdApp.repository.UserRepository;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,12 @@ public class UserController {
     public UserController(UserRepository repo) { this.repo = repo; }
 
     @GetMapping public List<User> all() { return repo.findAll(); }
+
+    @GetMapping("/me")
+    public User getCurrentUser(OAuth2AuthenticationToken auth) {
+        String email = auth.getPrincipal().getAttribute("email");
+        return repo.findByEmail(email).orElse(null);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getById(@PathVariable("id") Long id) {
