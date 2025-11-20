@@ -10,19 +10,19 @@ public class User {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userId")
     private Long userId;
-    @Column(name="name")
+    @Column(nullable = false, name="name")
     private String name;
-    @Column(name="email", unique = true)
+    @Column(nullable = false, name="email", unique = true)
     private String email;
-    @Column(name="oauthProvider")
+    @Column(nullable = false, name="oauthProvider")
     private String oauthProvider;
-    @Column(name="oauthId")
+    @Column(nullable = false, name="oauthId")
     private String oauthId;
     @Column(name="profilePicture")
     private String profilePicture;
     @Column(name="role")
     private String role;
-    @Column(name="createdAt")
+    @Column(nullable = false, name="createdAt", updatable = false)
     private Instant createdAt;
 
     public User() {
