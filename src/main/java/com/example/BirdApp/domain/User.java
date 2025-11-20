@@ -14,9 +14,9 @@ public class User {
     private String name;
     @Column(nullable = false, name="email", unique = true)
     private String email;
-    @Column(nullable = false, name="oauthProvider")
+    @Column(name="oauthProvider")
     private String oauthProvider;
-    @Column(nullable = false, name="oauthId")
+    @Column(name="oauthId")
     private String oauthId;
     @Column(name="profilePicture")
     private String profilePicture;
