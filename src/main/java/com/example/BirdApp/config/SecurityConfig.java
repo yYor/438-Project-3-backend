@@ -28,22 +28,26 @@ public class SecurityConfig {
                 oauth.userInfoEndpoint(userInfo ->
                     userInfo.userService(googleService)
                 );
-                oauth.defaultSuccessUrl("/api/users/me", true);
 
-                oauth.failureHandler((request, response, exception) -> {
-                    // If it's your "User not registered" case, return 401 or redirect
-                    if (exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException &&
-                        "User not registered".equals(exception.getMessage())) {
+                oauth.successHandler((request, response, authentication) -> {
+                    // TODO: replace with real JWT later if you want token-based auth
+                    String token = "TEMP_TOKEN";
 
-                        // For API/mobile style response:
-                        response.setStatus(401);
-                        response.setContentType("application/json");
-                        response.getWriter().write("{\"error\":\"USER_NOT_REGISTERED\"}");
+                    // If the login was started from the mobile app, we pass mobile=true
+                    String mobileFlag = request.getParameter("mobile");
+                    boolean fromMobileApp = "true".equalsIgnoreCase(mobileFlag);
+
+                    if (fromMobileApp) {
+                        // 🔹 Mobile: send deep-link back to Expo app
+                        String redirectUrl = "438project3frontend://oauth2redirect?token=" + token;
+                        response.sendRedirect(redirectUrl);
                     } else {
-                        // generic failure
-                        response.sendRedirect("/");
+                        // 🔹 Browser: just go somewhere normal (e.g. / or /api/users/me)
+                        response.sendRedirect("/api/users/me");
                     }
                 });
+
+                // (Optional) you can plug your failureHandler here again if you want
             })
             .logout(logout -> logout
                 .logoutSuccessUrl("/")
