@@ -43,7 +43,7 @@ public class SecurityConfig {
                         response.sendRedirect(redirectUrl);
                     } else {
                     //     // 🔹 Browser: just go somewhere normal (e.g. / or /api/users/me)
-                        response.sendRedirect("/api/users/me");
+                        response.sendRedirect("/api/auth/signup");
                     }
                 });
 
