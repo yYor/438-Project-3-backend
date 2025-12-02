@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.BirdApp.domain.User;
 import com.example.BirdApp.dto.SignupRequest;
 import com.example.BirdApp.repository.UserRepository;
-
+import org.springframework.web.bind.annotation.CrossOrigin;
+@CrossOrigin
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
