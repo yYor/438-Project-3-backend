@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -19,31 +20,17 @@ public class GoogleOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest request) {
-        OAuth2User oauthUser = super.loadUser(request);
+        public OAuth2User loadUser(OAuth2UserRequest request) {
+            OAuth2User oauthUser = super.loadUser(request);
+            String email = oauthUser.getAttribute("email");
 
-        String email = oauthUser.getAttribute("email");
-        String name  = oauthUser.getAttribute("name");
+            Optional<User> optionalUser = userRepository.findByEmail(email);
 
-        // If user does not exist, create them
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        User user = optionalUser.orElse(null);
+            if (optionalUser.isEmpty()) {
+                // redirect user to "Signup Required" page
+                throw new OAuth2AuthenticationException("User not registered");
+            }
 
-        if (user == null) {
-            user = new User();
-            user.setEmail(email);
-            user.setName(name);
-
-            // COMPLETE OAUTH USER DATA
-            user.setOauthProvider("google");
-            user.setOauthId(oauthUser.getName());  // Google's unique user ID (sub)
-            user.setProfilePicture(oauthUser.getAttribute("picture"));
-            user.setRole("USER");  // default role
-
-
-            userRepository.save(user);
+            return oauthUser;
         }
-
-        return oauthUser;
-    }
 }

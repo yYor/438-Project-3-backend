@@ -3,7 +3,6 @@ package com.example.BirdApp.config;
 import org.springframework.context.annotation.Bean;
 import com.example.BirdApp.security.GoogleOAuth2UserService;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -20,15 +19,35 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/public/**").permitAll()
+                .requestMatchers("/", "/api/public/**","/api/auth/signup","/oauth2/**","/login/oauth2/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> {
                 oauth.userInfoEndpoint(userInfo ->
                     userInfo.userService(googleService)
                 );
-                oauth.defaultSuccessUrl("/api/users/me", true);
+
+                oauth.successHandler((request, response, authentication) -> {
+                    // TODO: replace with real JWT later if you want token-based auth
+                    String token = "TEMP_TOKEN";
+
+                    // If the login was started from the mobile app, we pass mobile=true
+                    String mobileFlag = request.getParameter("mobile");
+                    boolean fromMobileApp = "true".equalsIgnoreCase(mobileFlag);
+
+                    if (fromMobileApp) {
+                        // 🔹 Mobile: send deep-link back to Expo app
+                        String redirectUrl = "438project3frontend://oauth2redirect?token=" + token;
+                        response.sendRedirect(redirectUrl);
+                    } else {
+                        // 🔹 Browser: just go somewhere normal (e.g. / or /api/users/me)
+                        response.sendRedirect("/api/users/me");
+                    }
+                });
+
+                // (Optional) you can plug your failureHandler here again if you want
             })
             .logout(logout -> logout
                 .logoutSuccessUrl("/")
