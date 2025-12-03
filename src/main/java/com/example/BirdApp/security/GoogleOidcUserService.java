@@ -66,6 +66,7 @@ public class GoogleOidcUserService extends OidcUserService {
                 newUser.setOauthProvider("google");
                 newUser.setOauthId(sub != null ? sub : "");
                 newUser.setProfilePicture(picture);
+                newUser.setRole("user");
 
                 User savedUser = userRepository.save(newUser);
                 logger.info("Successfully created user with ID: {} for email: {}", savedUser.getUserId(), email);
