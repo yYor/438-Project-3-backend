@@ -6,14 +6,20 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import com.example.BirdApp.security.GoogleOidcUserService;
 
 @Configuration
 public class SecurityConfig {
 
-    private final GoogleOAuth2UserService googleService;
+    // private final GoogleOAuth2UserService googleService;
 
-    public SecurityConfig(GoogleOAuth2UserService googleService) {
-        this.googleService = googleService;
+    // public SecurityConfig(GoogleOAuth2UserService googleService) {
+    //     this.googleService = googleService;
+    // }
+    private final GoogleOidcUserService googleOidcService;
+
+    public SecurityConfig(GoogleOidcUserService googleOidcService) {
+        this.googleOidcService = googleOidcService;
     }
 
     @Bean
@@ -29,7 +35,7 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth -> {
                 oauth.userInfoEndpoint(userInfo ->
-                    userInfo.userService(googleService)
+                    userInfo.oidcUserService(googleOidcService)
                 );
 
                 oauth.successHandler((request, response, authentication) -> {
