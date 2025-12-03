@@ -5,64 +5,96 @@ import com.example.BirdApp.security.GoogleOAuth2UserService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
-import com.example.BirdApp.security.GoogleOidcUserService;
+
+import jakarta.servlet.http.HttpSession;
 
 @Configuration
 public class SecurityConfig {
-
     private final GoogleOAuth2UserService googleService;
+
+    private static final String MOBILE_SESSION_ATTR = "oauth2_mobile_flag";
 
     public SecurityConfig(GoogleOAuth2UserService googleService) {
         this.googleService = googleService;
     }
-    // private final GoogleOidcUserService googleOidcService;
-
-    // public SecurityConfig(GoogleOidcUserService googleOidcService) {
-    //     this.googleOidcService = googleOidcService;
-    // }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/auth/signup").authenticated()
-                .requestMatchers("/", "/api/public/**","/oauth2/**","/login/oauth2/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .oauth2Login(oauth -> {
-                oauth.userInfoEndpoint(userInfo ->
-                    userInfo.userService(googleService)
-                );
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/signup").authenticated()
+                        .requestMatchers("/", "/api/public/**", "/oauth2/**", "/login/oauth2/**").permitAll()
+                        .anyRequest().authenticated())
+                .oauth2Login(oauth -> {
+                    oauth.userInfoEndpoint(userInfo -> userInfo.userService(googleService));
 
-                oauth.successHandler((request, response, authentication) -> {
-                    // TODO: replace with real JWT later if you want token-based auth
-                    String token = "TEMP_TOKEN";
+                    // Custom authorization request repository to save mobile flag in session
+                    oauth.authorizationEndpoint(authEndpoint -> {
+                        authEndpoint.authorizationRequestRepository(
+                                new AuthorizationRequestRepository<OAuth2AuthorizationRequest>() {
+                                    private final HttpSessionOAuth2AuthorizationRequestRepository delegate = new HttpSessionOAuth2AuthorizationRequestRepository();
 
-                    // If the login was started from the mobile app, we pass mobile=true
-                    String mobileFlag = request.getParameter("mobile");
-                    boolean fromMobileApp = "true".equalsIgnoreCase(mobileFlag);
+                                    @Override
+                                    public OAuth2AuthorizationRequest loadAuthorizationRequest(
+                                            jakarta.servlet.http.HttpServletRequest request) {
+                                        return delegate.loadAuthorizationRequest(request);
+                                    }
 
-                    if (fromMobileApp) {
-                    //     // 🔹 Mobile: send deep-link back to Expo app
-                        String redirectUrl = "438project3frontend://oauth2redirect?token=" + token;
-                        response.sendRedirect(redirectUrl);
-                    } else {
-                    //     // 🔹 Browser: just go somewhere normal (e.g. / or /api/users/me)
-                        response.sendRedirect("/api/auth/signup");
-                    }
-                });
+                                    @Override
+                                    public void saveAuthorizationRequest(
+                                            OAuth2AuthorizationRequest authorizationRequest,
+                                            jakarta.servlet.http.HttpServletRequest request,
+                                            jakarta.servlet.http.HttpServletResponse response) {
+                                        // Save mobile flag to session before OAuth redirect
+                                        String mobileFlag = request.getParameter("mobile");
+                                        if ("true".equalsIgnoreCase(mobileFlag)) {
+                                            request.getSession().setAttribute(MOBILE_SESSION_ATTR, true);
+                                        }
+                                        delegate.saveAuthorizationRequest(authorizationRequest, request, response);
+                                    }
 
-                // (Optional) you can plug your failureHandler here again if you want
-            })
-            .logout(logout -> logout
-                .logoutSuccessUrl("/")
-                .permitAll()
-            );
+                                    @Override
+                                    public OAuth2AuthorizationRequest removeAuthorizationRequest(
+                                            jakarta.servlet.http.HttpServletRequest request,
+                                            jakarta.servlet.http.HttpServletResponse response) {
+                                        return delegate.removeAuthorizationRequest(request, response);
+                                    }
+                                });
+                    });
 
+                    oauth.successHandler((request, response, authentication) -> {
+                        // TODO: replace with real JWT later if you want token-based auth
+                        String token = "TEMP_TOKEN";
+
+                        // Check session for mobile flag (survives OAuth redirect)
+                        HttpSession session = request.getSession(false);
+                        boolean fromMobileApp = session != null &&
+                                Boolean.TRUE.equals(session.getAttribute(MOBILE_SESSION_ATTR));
+
+                        // Clean up session attribute
+                        if (session != null) {
+                            session.removeAttribute(MOBILE_SESSION_ATTR);
+                        }
+
+                        if (fromMobileApp) {
+                            // Mobile: send deep-link back to Expo app
+                            String redirectUrl = "438project3frontend://oauth2redirect?token=" + token;
+                            response.sendRedirect(redirectUrl);
+                        } else {
+                            // Browser: redirect to signup endpoint
+                            response.sendRedirect("/api/auth/signup");
+                        }
+                    });
+                })
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/")
+                        .permitAll());
         return http.build();
     }
 }
