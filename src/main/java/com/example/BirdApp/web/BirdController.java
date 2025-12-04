@@ -1,6 +1,7 @@
 package com.example.BirdApp.web;
 
 import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -24,6 +25,7 @@ public class BirdController {
 
     @GetMapping
     public ResponseEntity<List<Bird>> getBirds() {
-        return new ResponseEntity<>(birdRepository.findAll(), HttpStatus.OK);
+        List<Bird> birds = birdRepository.findAll();
+        return new ResponseEntity<>(birds, HttpStatus.OK);
     }
 }
