@@ -1,29 +1,29 @@
 package com.example.BirdApp.web;
 
-
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.BirdApp.BirdService;
+import com.example.BirdApp.domain.Bird;
+import com.example.BirdApp.repository.BirdRepository;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/birds")
 public class BirdController {
-    
-    BirdService birdService;
-    
-    @Autowired
-    public BirdController(BirdService birdService) {
-        this.birdService = birdService;
-    }
-    
-    @GetMapping("/getBirds")
-    public ResponseEntity<?> getBirds() {
-        return new ResponseEntity<>(this.birdService.getAllBirds(), HttpStatus.OK);
+
+    private final BirdRepository birdRepository;
+
+    public BirdController(BirdRepository birdRepository) {
+        this.birdRepository = birdRepository;
     }
 
+    @GetMapping
+    public ResponseEntity<List<Bird>> getBirds() {
+        return new ResponseEntity<>(birdRepository.findAll(), HttpStatus.OK);
+    }
 }
