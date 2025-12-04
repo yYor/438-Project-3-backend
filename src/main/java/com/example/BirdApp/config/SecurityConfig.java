@@ -3,6 +3,7 @@ package com.example.BirdApp.config;
 import org.springframework.context.annotation.Bean;
 import com.example.BirdApp.security.GoogleOAuth2UserService;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -14,6 +15,11 @@ public class SecurityConfig {
     public SecurityConfig(GoogleOAuth2UserService googleService) {
         this.googleService = googleService;
     }
+    // private final GoogleOidcUserService googleOidcService;
+
+    // public SecurityConfig(GoogleOidcUserService googleOidcService) {
+    //     this.googleOidcService = googleOidcService;
+    // }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -21,7 +27,9 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/api/public/**","/api/auth/signup","/oauth2/**","/login/oauth2/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/signup").authenticated()
+                .requestMatchers("/", "/api/public/**","/oauth2/**","/login/oauth2/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> {
@@ -37,14 +45,14 @@ public class SecurityConfig {
                     String mobileFlag = request.getParameter("mobile");
                     boolean fromMobileApp = "true".equalsIgnoreCase(mobileFlag);
 
-                    if (fromMobileApp) {
-                        // 🔹 Mobile: send deep-link back to Expo app
-                        String redirectUrl = "438project3frontend://oauth2redirect?token=" + token;
+                    // if (fromMobileApp) {
+                    //     // 🔹 Mobile: send deep-link back to Expo app
+                        String redirectUrl = "exp://10.11.116.151:8081?token=" + token;
                         response.sendRedirect(redirectUrl);
-                    } else {
-                        // 🔹 Browser: just go somewhere normal (e.g. / or /api/users/me)
-                        response.sendRedirect("/api/users/me");
-                    }
+                    // } else {
+                    // //     // 🔹 Browser: just go somewhere normal (e.g. / or /api/users/me)
+                    //     response.sendRedirect("/api/auth/signup");
+                    // }
                 });
 
                 // (Optional) you can plug your failureHandler here again if you want
