@@ -24,5 +24,10 @@ public class BirdController {
         this.birdRepository = birdRepository;
     }
 
-    @GetMapping public List<Bird> all() { return birdRepository.findAll(); }
+    @GetMapping
+    public ResponseEntity<List<Bird>> getBirds() {
+        return new ResponseEntity<>(birdRepository.findAll(), HttpStatus.OK);
+        List<Bird> birds = birdRepository.findAll();
+        // return new ResponseEntity<>(birds, HttpStatus.OK);
+    }
 }

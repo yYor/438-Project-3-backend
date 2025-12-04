@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface BirdRepository extends JpaRepository<Bird, Long> {
-   // @Query(value ="select * from \"birds\"", nativeQuery = true)
-   // public Optional<List<Bird>> getAllBirds(); 
+   @Query(value ="select * from \"birds\"", nativeQuery = true)
+   public Optional<List<Bird>> getAllBirds(); 
 }
