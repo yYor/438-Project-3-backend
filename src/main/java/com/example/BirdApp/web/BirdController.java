@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.BirdApp.domain.Bird;
+import com.example.BirdApp.domain.User;
 import com.example.BirdApp.repository.BirdRepository;
 
 @CrossOrigin
@@ -23,9 +24,5 @@ public class BirdController {
         this.birdRepository = birdRepository;
     }
 
-    @GetMapping
-    public ResponseEntity<List<Bird>> getBirds() {
-        List<Bird> birds = birdRepository.findAll();
-        return new ResponseEntity<>(birds, HttpStatus.OK);
-    }
+    @GetMapping public List<Bird> all() { return birdRepository.findAll(); }
 }
