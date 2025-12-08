@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/auth/signup").authenticated()
                 .requestMatchers("/", "/api/public/**","/oauth2/**","/login/oauth2/**").permitAll()
                 .requestMatchers("/api/birds/**").permitAll()
+                .requestMatchers("/api/sightings/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> {
