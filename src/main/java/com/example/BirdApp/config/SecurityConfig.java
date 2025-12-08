@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/signup").authenticated()
                 .requestMatchers("/", "/api/public/**","/oauth2/**","/login/oauth2/**").permitAll()
+                .requestMatchers("/api/birds/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> {
