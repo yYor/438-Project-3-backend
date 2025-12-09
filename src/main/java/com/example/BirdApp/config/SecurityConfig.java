@@ -70,7 +70,7 @@ public class SecurityConfig {
                     user = userRepository.save(user);
 
                     String redirectUrl =
-                        "https://birdwatchers-c872a1ce9f02.herokuapp.com/mobile-redirect" +
+                        "https://birdwatchers-c872a1ce9f02.herokuapp.com/api/auth/mobile-redirect" +
                         "?userId=" + user.getUserId() +
                         "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8) +
                         "&email=" + java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8) +
