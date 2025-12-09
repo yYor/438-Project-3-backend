@@ -39,6 +39,7 @@ public class SecurityConfig {
                     userInfo.userService(googleService)
                 );
 
+                // Required in Spring Boot 3 to avoid registrationId confusion
                 oauth.defaultSuccessUrl("/", true);
 
                 oauth.successHandler((request, response, authentication) -> {
@@ -47,28 +48,20 @@ public class SecurityConfig {
                     String email   = oauthUser.<String>getAttribute("email");
                     String rawName = oauthUser.<String>getAttribute("name");
                     String rawPic  = oauthUser.<String>getAttribute("picture");
-                    String sub     = oauthUser.getName(); // Google subject id
+                    String sub     = oauthUser.getName();
 
-                    // If email is missing, you can't really proceed – bail out in a controlled way
                     if (email == null || email.isBlank()) {
-                        // you can log this
-                        System.err.println("Google OAuth user has no email – cannot proceed");
-                        // redirect somewhere safe (or show an error page)
-                        response.sendRedirect("https://birdwatchers-c872a1ce9f02.herokuapp.com/api/public/oauth-error");
+                        response.sendRedirect("https://birdwatchers-c872a1ce9f02.herokuapp.com/error");
                         return;
                     }
 
                     String name    = rawName != null ? rawName : "";
                     String picture = rawPic  != null ? rawPic  : "";
 
-                    // upsert user in DB
                     User user = userRepository.findByEmail(email)
-                        .orElseGet(() -> {
-                            User u = new User();
-                            u.setEmail(email);
-                            return u;
-                        });
+                        .orElseGet(() -> new User());
 
+                    user.setEmail(email);
                     user.setName(name);
                     user.setProfilePicture(picture);
                     user.setOauthProvider("google");
