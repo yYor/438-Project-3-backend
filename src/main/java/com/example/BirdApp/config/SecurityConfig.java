@@ -75,7 +75,7 @@ public class SecurityConfig {
                     user = userRepository.save(user);
 
                     String redirectUrl =
-                        "exp://192.168.0.55:8081/--/login" +
+                        "438project3frontend://oauth2redirect" +
                         "?userId=" + user.getUserId() +
                         "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8) +
                         "&email=" + java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8) +
