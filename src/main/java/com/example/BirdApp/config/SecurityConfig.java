@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/api/public/**").permitAll()
                 .requestMatchers("/api/birds/**").permitAll()
                 .requestMatchers("/api/sightings/**").permitAll()
+                .requestMatchers("/api/users/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth -> {
@@ -79,7 +80,6 @@ public class SecurityConfig {
                     response.sendRedirect(redirectUrl);
                 });
 
-                // (Optional) you can plug your failureHandler here again if you want
             })
             .logout(logout -> logout
                 .logoutSuccessUrl("/")
