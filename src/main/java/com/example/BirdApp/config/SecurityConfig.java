@@ -29,7 +29,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/signup").authenticated()
-                .requestMatchers("/", "/api/public/**","/oauth2/**","/login/oauth2/**").permitAll()
+                .requestMatchers("/", "/api/public/**").permitAll()
                 .requestMatchers("/api/birds/**").permitAll()
                 .requestMatchers("/api/sightings/**").permitAll()
                 .anyRequest().authenticated()
