@@ -95,7 +95,7 @@ public class AuthController {
             HttpServletResponse response
     ) throws IOException {
 
-        String base = "438project3frontend://oauth2redirect";
+        String base = "exp://10.11.116.151:8081/--/login";
 
         String redirectUrl = base;
 
