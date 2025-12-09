@@ -1,5 +1,11 @@
 package com.example.BirdApp.web;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -9,12 +15,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.BirdApp.domain.User;
 import com.example.BirdApp.dto.SignupRequest;
 import com.example.BirdApp.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @CrossOrigin
 @RestController
@@ -78,5 +87,26 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/mobile-redirect")
+    public void mobileRedirect(
+            @RequestParam Map<String, String> params,
+            HttpServletResponse response
+    ) throws IOException {
+
+        String base = "438project3frontend://oauth2redirect";
+
+        String redirectUrl = base;
+
+        if (!params.isEmpty()) {
+            String query = params.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                    .collect(Collectors.joining("&"));
+            redirectUrl = base + "?" + query;
+        }
+
+        response.setStatus(302);
+        response.setHeader("Location", redirectUrl);
     }
 }
