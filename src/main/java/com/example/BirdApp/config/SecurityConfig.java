@@ -39,6 +39,8 @@ public class SecurityConfig {
                     userInfo.userService(googleService)
                 );
 
+                oauth.defaultSuccessUrl("/", true);
+
                 oauth.successHandler((request, response, authentication) -> {
                     var oauthUser = (org.springframework.security.oauth2.core.user.OAuth2User) authentication.getPrincipal();
 
