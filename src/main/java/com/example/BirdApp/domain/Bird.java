@@ -11,7 +11,7 @@ import java.util.Objects;
 public class Bird {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "birdid")
+    @Column(name = "birdId")
     private Long birdId;
 
     //ex: Grey-headed chickadee 
