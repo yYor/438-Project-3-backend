@@ -35,11 +35,25 @@ public class SightingController {
 
     // GET /api/sightings/recent
     @GetMapping("/recent")
-    public List<SightingResponse> getRecentSightings() {
-        List<Sighting> sightings = sightingService.getRecentSightings();
-        return sightings.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public ResponseEntity<?> getRecentSightings() {
+        try {
+            List<Sighting> sightings = sightingService.getRecentSightings();
+            List<SightingResponse> responses = sightings.stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            // Log full stack trace to Heroku logs
+            e.printStackTrace();
+
+            // Return JSON instead of HTML whitelabel page
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            body.put("error", e.getClass().getSimpleName());
+            body.put("message", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        }
     }
 
     // GET /api/sightings/by-bird/{birdId}
@@ -85,7 +99,7 @@ public class SightingController {
 
         if (s.getBird() != null) {
             dto.setBirdId(s.getBird().getBirdId());
-            dto.setBirdName(s.getBird().getbirdName());
+            dto.setBirdName(s.getBird().getbirdName()); // if your Bird entity really has this exact getter
         }
 
         if (s.getUser() != null) {
