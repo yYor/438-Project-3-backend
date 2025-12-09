@@ -10,28 +10,33 @@ import java.util.Objects;
 @Table(name = "birds")
 public class Bird {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "birdid")
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "\"birdId\"")
     private Long birdId;
 
-    //ex: Grey-headed chickadee 
-    @Column(name = "birdName")
+    // ex: Grey-headed chickadee 
+    @Column(name = "\"birdName\"")
     private String birdName;
-    //ex: Poecile cinctus
-    @Column(name = "sciName")
+
+    // ex: Poecile cinctus
+    @Column(name = "\"sciName\"")
     private String sciName;
-    //ex: Alaska, Scandinavia: more descriptive locations might be better
-    @Column(name = "habitat")
+
+    // ex: Alaska, Scandinavia...
+    @Column(name = "\"habitat\"")
     private String habitat;
-    //ex: Paridae, might be unecessary but i am covering our bases.
-    @Column(name = "family")
+
+    // ex: Paridae
+    @Column(name = "\"family\"")
     private String family;
-    //ex: Least Concern, Conservation status, again maybe unecessary but its here
-    @Column(name = "cnsrvStatus")
+
+    // ex: Least Concern
+    @Column(name = "\"cnsrvStatus\"")
     private String cnsrvStatus;
 
-
     public Bird() {}
+
     public Bird(String birdName, String sciName, String habitat, String family, String cnsrvStatus){
         this.birdName = birdName;
         this.sciName = sciName;
@@ -40,7 +45,6 @@ public class Bird {
         this.cnsrvStatus = cnsrvStatus;
     }
 
-    // Getters and Setters
     public Long getBirdId() {
         return birdId;
     }
