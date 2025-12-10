@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class GoogleOAuth2UserService extends DefaultOAuth2UserService {
-    // You can rename this to CustomOAuth2UserService later; the name doesn't matter.
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleOAuth2UserService.class);
 
@@ -21,10 +20,6 @@ public class GoogleOAuth2UserService extends DefaultOAuth2UserService {
         String provider = request.getClientRegistration().getRegistrationId(); // "google" or "github"
         logger.info("OAuth2 login with provider: {}", provider);
         logger.info("OAuth2User attributes: {}", oauthUser.getAttributes());
-
-        // ❗ NO DB writes, NO email checks, NO custom exceptions here.
-        // If we get attributes from the provider, we just return them.
-        // All user creation/update + redirect is done in SecurityConfig's successHandler.
 
         return oauthUser;
     }
