@@ -3,6 +3,8 @@ package com.example.BirdApp.security;
 import com.example.BirdApp.domain.User;
 import com.example.BirdApp.repository.UserRepository;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class GoogleOAuth2UserService extends DefaultOAuth2UserService {
+    // (Feel free to rename this to CustomOAuth2UserService later; the bean name doesn't matter.)
 
     private static final Logger logger = LoggerFactory.getLogger(GoogleOAuth2UserService.class);
     private final UserRepository userRepository;
@@ -26,63 +29,111 @@ public class GoogleOAuth2UserService extends DefaultOAuth2UserService {
 
     @Override
     @Transactional
-    public OAuth2User loadUser(OAuth2UserRequest request) {
+    public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
         OAuth2User oauthUser = super.loadUser(request);
 
-        // Log all available attributes for debugging
-        logger.info("OAuth2User attributes: {}", oauthUser.getAttributes());
+        String provider = request.getClientRegistration().getRegistrationId(); // "google" or "github"
+        Map<String, Object> attributes = oauthUser.getAttributes();
+        logger.info("OAuth2 login with provider: {}", provider);
+        logger.info("OAuth2User attributes: {}", attributes);
 
-        String email = oauthUser.getAttribute("email");
-        String name = oauthUser.getAttribute("name");
-        String picture = oauthUser.getAttribute("picture");
-        String sub = oauthUser.getAttribute("sub"); // Google's unique user ID
+        // This is the provider's "primary key" for the user:
+        // Google: "sub", GitHub: "id" (because of user-name-attribute=id)
+        String oauthId = oauthUser.getName();
 
-        // Validate required fields
+        String email;
+        String name;
+        String picture;
+
+        if ("google".equalsIgnoreCase(provider)) {
+            email = (String) attributes.get("email");
+            name = (String) attributes.get("name");
+            picture = (String) attributes.get("picture");
+
+            if (name == null || name.isEmpty()) {
+                name = email;
+            }
+
+        } else if ("github".equalsIgnoreCase(provider)) {
+            // GitHub: id, login, name, avatar_url, email...
+            email = (String) attributes.get("email");
+            String login = (String) attributes.get("login");
+
+            if (email == null || email.isEmpty()) {
+                // fallback so we have *some* stable email-like string
+                email = login + "@github.local";
+                logger.warn("GitHub did not provide email; using pseudo email: {}", email);
+            }
+
+            name = (String) attributes.get("name");
+            if (name == null || name.isEmpty()) {
+                name = login; // fallback to username
+            }
+
+            picture = (String) attributes.get("avatar_url");
+
+        } else {
+            throw new OAuth2AuthenticationException("Unsupported OAuth provider: " + provider);
+        }
+
         if (email == null || email.isEmpty()) {
-            logger.error("Email is null or empty from OAuth response. Available attributes: {}",
-                    oauthUser.getAttributes());
+            logger.error("Email is null or empty after mapping for provider {}. Attributes: {}", provider, attributes);
             throw new OAuth2AuthenticationException("Email not provided by OAuth provider");
         }
 
-        // Use email as fallback for name if name is null
-        if (name == null || name.isEmpty()) {
-            name = email;
-            logger.warn("Name not provided by OAuth, using email as name: {}", email);
-        }
-
         try {
-            Optional<User> optionalUser = userRepository.findByEmail(email);
+            Optional<User> optionalUser = userRepository.findByOauthProviderAndOauthId(provider, oauthId);
 
             if (optionalUser.isEmpty()) {
-                // Automatically create user from OAuth data
-                logger.info("Creating new user for email: {}", email);
+                logger.info("Creating new user for provider={}, oauthId={}, email={}", provider, oauthId, email);
+
                 User newUser = new User();
                 newUser.setEmail(email);
                 newUser.setName(name);
-                newUser.setOauthProvider("google");
-                newUser.setOauthId(sub != null ? sub : "");
                 newUser.setProfilePicture(picture);
+                newUser.setOauthProvider(provider);
+                newUser.setOauthId(oauthId);
                 newUser.setRole("user");
 
                 User savedUser = userRepository.save(newUser);
                 logger.info("Successfully created user with ID: {} for email: {}", savedUser.getUserId(), email);
-            } else {
-                // Update existing user's OAuth info if needed
-                User existingUser = optionalUser.get();
-                logger.info("Found existing user with ID: {} for email: {}", existingUser.getUserId(), email);
 
-                if (existingUser.getOauthId() == null || existingUser.getOauthId().isEmpty()) {
-                    existingUser.setOauthProvider("google");
-                    existingUser.setOauthId(sub != null ? sub : "");
-                    if (picture != null) {
-                        existingUser.setProfilePicture(picture);
-                    }
-                    userRepository.save(existingUser);
-                    logger.info("Updated OAuth info for existing user: {}", email);
+            } else {
+                User existing = optionalUser.get();
+                logger.info("Found existing user {} for provider={}, oauthId={}",
+                        existing.getUserId(), provider, oauthId);
+
+                boolean updated = false;
+
+                if (existing.getEmail() == null || existing.getEmail().isEmpty()) {
+                    existing.setEmail(email);
+                    updated = true;
+                }
+                if (existing.getName() == null || existing.getName().isEmpty()) {
+                    existing.setName(name);
+                    updated = true;
+                }
+                if (picture != null && !picture.isEmpty()
+                        && (existing.getProfilePicture() == null || existing.getProfilePicture().isEmpty())) {
+                    existing.setProfilePicture(picture);
+                    updated = true;
+                }
+                if (existing.getOauthProvider() == null || existing.getOauthProvider().isEmpty()) {
+                    existing.setOauthProvider(provider);
+                    updated = true;
+                }
+                if (existing.getOauthId() == null || existing.getOauthId().isEmpty()) {
+                    existing.setOauthId(oauthId);
+                    updated = true;
+                }
+
+                if (updated) {
+                    userRepository.save(existing);
+                    logger.info("Updated user {} after OAuth login", existing.getUserId());
                 }
             }
         } catch (Exception e) {
-            logger.error("Error saving user for email: {}", email, e);
+            logger.error("Error saving user for provider={}, oauthId={}, email={}", provider, oauthId, email, e);
             throw new OAuth2AuthenticationException("Failed to save user: " + e.getMessage());
         }
 
