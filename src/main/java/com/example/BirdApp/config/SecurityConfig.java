@@ -41,41 +41,83 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth -> {
                 oauth.userInfoEndpoint(userInfo ->
-                    userInfo.userService(oAuth2UserService) // now handles google + github
+                    userInfo.userService(oAuth2UserService) // still your existing service bean
                 );
 
+                // defaultSuccessUrl won't really matter since we override successHandler,
+                // but it doesn't hurt to keep it.
                 oauth.defaultSuccessUrl("/", true);
 
                 oauth.successHandler((request, response, authentication) -> {
-                    OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-                    OAuth2User oauthUser = oauthToken.getPrincipal();
+                    var oauthToken = (org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication;
+                    var oauthUser  = (org.springframework.security.oauth2.core.user.OAuth2User) oauthToken.getPrincipal();
 
                     String provider = oauthToken.getAuthorizedClientRegistrationId(); // "google" or "github"
-                    String oauthId = oauthUser.getName(); // same id we used in the service
+                    var attrs = oauthUser.getAttributes();
 
-                    // Find the user that the service just created/updated
-                    User user = userRepository
-                        .findByOauthProviderAndOauthId(provider, oauthId)
-                        .orElseThrow(() -> new IllegalStateException(
-                            "User not found after OAuth2 login for provider=" + provider + ", oauthId=" + oauthId
-                        ));
+                    String email;
+                    String name;
+                    String picture;
+                    String oauthId = oauthUser.getName(); // Google: "sub", GitHub: "id" (because of user-name-attribute)
 
-                    String name = user.getName() != null ? user.getName() : "";
-                    String email = user.getEmail();
-                    String picture = user.getProfilePicture() != null ? user.getProfilePicture() : "";
+                    if ("google".equalsIgnoreCase(provider)) {
+                        // ---- Google mapping ----
+                        email = (String) attrs.get("email");
+                        name  = (String) attrs.get("name");
+                        picture = (String) attrs.get("picture");
 
-                    if (email == null || email.isBlank()) {
-                        // This should be rare but let's still guard it
+                        if (name == null || name.isEmpty()) {
+                            name = email;
+                        }
+
+                    } else if ("github".equalsIgnoreCase(provider)) {
+                        // ---- GitHub mapping ----
+                        // GitHub gives: id, login, name, avatar_url, email (may be null)
+                        email = (String) attrs.get("email");
+                        String login = (String) attrs.get("login");
+
+                        if (email == null || email.isBlank()) {
+                            // fallback so we always have something stable
+                            email = login + "@github.local";
+                        }
+
+                        name = (String) attrs.get("name");
+                        if (name == null || name.isBlank()) {
+                            name = login;
+                        }
+
+                        picture = (String) attrs.get("avatar_url");
+                    } else {
+                        // If some other provider appears, bail
                         response.sendRedirect("https://birdwatchers-c872a1ce9f02.herokuapp.com/error");
                         return;
                     }
 
+                    if (email == null || email.isBlank()) {
+                        response.sendRedirect("https://birdwatchers-c872a1ce9f02.herokuapp.com/error");
+                        return;
+                    }
+
+                    // === This is basically your OLD logic, just with provider-aware mapping ===
+                    User user = userRepository.findByEmail(email).orElseGet(User::new);
+
+                    user.setEmail(email);
+                    user.setName(name != null ? name : "");
+                    user.setProfilePicture(picture);
+                    user.setOauthProvider(provider);  // "google" or "github"
+                    user.setOauthId(oauthId);        // Google's "sub" or GitHub's "id"
+                    if (user.getRole() == null || user.getRole().isBlank()) {
+                        user.setRole("user");
+                    }
+
+                    user = userRepository.save(user);
+
                     String redirectUrl =
                         "https://birdwatchers-c872a1ce9f02.herokuapp.com/api/auth/mobile-redirect" +
                         "?userId=" + user.getUserId() +
-                        "&name=" + URLEncoder.encode(name, StandardCharsets.UTF_8) +
-                        "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8) +
-                        "&picture=" + URLEncoder.encode(picture, StandardCharsets.UTF_8);
+                        "&name=" + java.net.URLEncoder.encode(user.getName() != null ? user.getName() : "", java.nio.charset.StandardCharsets.UTF_8) +
+                        "&email=" + java.net.URLEncoder.encode(user.getEmail(), java.nio.charset.StandardCharsets.UTF_8) +
+                        "&picture=" + java.net.URLEncoder.encode(user.getProfilePicture() != null ? user.getProfilePicture() : "", java.nio.charset.StandardCharsets.UTF_8);
 
                     response.sendRedirect(redirectUrl);
                 });
