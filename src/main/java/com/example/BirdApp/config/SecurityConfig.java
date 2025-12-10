@@ -106,6 +106,11 @@ public class SecurityConfig {
 
                     Long userIdForRedirect = -1L;
 
+                    // defaults from provider, in case DB save fails
+                    String finalName = (name != null ? name : "");
+                    String finalEmail = email;
+                    String finalPicture = (picture != null ? picture : "");
+
                     try {
                         // Try to create/update the user in DB
                         User user = userRepository.findByEmail(email).orElseGet(User::new);
@@ -116,12 +121,14 @@ public class SecurityConfig {
 
                         String incomingName = name != null ? name.trim() : "";
 
+                        // Only set the name if it's a new user or existing name is blank
                         if (isNew || user.getName() == null || user.getName().isBlank()) {
                             if (!incomingName.isBlank()) {
                                 user.setName(incomingName);
                             }
-                            // if incomingName is blank, just leave whatever is there (or null)
+                            // else leave it null/blank; user can fill it later
                         }
+
                         user.setProfilePicture(picture);
                         user.setOauthProvider(provider);  // "google" or "github"
                         user.setOauthId(oauthId);
@@ -132,22 +139,26 @@ public class SecurityConfig {
                         user = userRepository.save(user);
                         userIdForRedirect = user.getUserId();
 
-                        logger.info("Saved user {} for provider={}, email={}", userIdForRedirect, provider, email);
+                        // 👇 Use the values actually stored in the DB
+                        finalName = (user.getName() != null ? user.getName() : finalName);
+                        finalEmail = (user.getEmail() != null ? user.getEmail() : finalEmail);
+                        if (user.getProfilePicture() != null && !user.getProfilePicture().isBlank()) {
+                            finalPicture = user.getProfilePicture();
+                        }
+
+                        logger.info("Saved user {} for provider={}, email={}", userIdForRedirect, provider, finalEmail);
                     } catch (Exception e) {
-                        // This is where your stack trace is coming from now.
                         // We log it, but DON'T explode the login flow.
                         logger.error("Error saving user for provider={}, email={}", provider, email, e);
                     }
 
-                    String safeName = name != null ? name : "";
-                    String safePicture = picture != null ? picture : "";
-
+                    // 👇 Build redirect from the final (DB-backed) values
                     String redirectUrl =
                         "https://birdwatchers-c872a1ce9f02.herokuapp.com/api/auth/mobile-redirect" +
                         "?userId=" + userIdForRedirect +
-                        "&name=" + URLEncoder.encode(safeName, StandardCharsets.UTF_8) +
-                        "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8) +
-                        "&picture=" + URLEncoder.encode(safePicture, StandardCharsets.UTF_8) +
+                        "&name=" + URLEncoder.encode(finalName, StandardCharsets.UTF_8) +
+                        "&email=" + URLEncoder.encode(finalEmail, StandardCharsets.UTF_8) +
+                        "&picture=" + URLEncoder.encode(finalPicture, StandardCharsets.UTF_8) +
                         "&provider=" + URLEncoder.encode(provider, StandardCharsets.UTF_8);
 
                     logger.info("Redirecting to mobile-redirect URL: {}", redirectUrl);
