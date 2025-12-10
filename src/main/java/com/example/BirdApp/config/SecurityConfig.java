@@ -41,9 +41,10 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth -> {
                 oauth.userInfoEndpoint(userInfo ->
-                    userInfo.userService(oAuth2UserService) // now just logs + returns attributes
+                    userInfo.userService(oAuth2UserService) // just logs attributes, no DB
                 );
 
+                // Not super important since we override successHandler, but OK to keep
                 oauth.defaultSuccessUrl("/", true);
 
                 oauth.successHandler((request, response, authentication) -> {
@@ -58,11 +59,12 @@ public class SecurityConfig {
                     String email;
                     String name;
                     String picture;
-                    String oauthId = oauthUser.getName(); // Google: "sub"; GitHub: "id" (because of user-name-attribute)
+                    String oauthId = oauthUser.getName(); // Google: "sub"; GitHub: "id" (user-name-attribute)
 
                     if ("google".equalsIgnoreCase(provider)) {
-                        email = (String) attrs.get("email");
-                        name = (String) attrs.get("name");
+                        // ---- Google mapping ----
+                        email   = (String) attrs.get("email");
+                        name    = (String) attrs.get("name");
                         picture = (String) attrs.get("picture");
 
                         if (name == null || name.isEmpty()) {
@@ -70,11 +72,12 @@ public class SecurityConfig {
                         }
 
                     } else if ("github".equalsIgnoreCase(provider)) {
+                        // ---- GitHub mapping ----
                         email = (String) attrs.get("email");
                         String login = (String) attrs.get("login");
 
                         if (email == null || email.isBlank()) {
-                            // fallback so we always have *something* stable
+                            // fallback so we always have some stable value
                             email = login + "@github.local";
                         }
 
@@ -85,6 +88,7 @@ public class SecurityConfig {
 
                         picture = (String) attrs.get("avatar_url");
                     } else {
+                        // Unknown provider -> send to backend error page
                         response.sendRedirect("https://birdwatchers-c872a1ce9f02.herokuapp.com/error");
                         return;
                     }
@@ -94,7 +98,7 @@ public class SecurityConfig {
                         return;
                     }
 
-                    // Create or update user by email (like your original working logic)
+                    // === Create or update user (same idea as your original Google-only logic) ===
                     User user = userRepository.findByEmail(email).orElseGet(User::new);
 
                     user.setEmail(email);
@@ -108,6 +112,7 @@ public class SecurityConfig {
 
                     user = userRepository.save(user);
 
+                    // === Build redirect to your mobile-redirect endpoint ===
                     String redirectUrl =
                         "https://birdwatchers-c872a1ce9f02.herokuapp.com/api/auth/mobile-redirect" +
                         "?userId=" + user.getUserId() +
