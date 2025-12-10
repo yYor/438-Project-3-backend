@@ -110,8 +110,18 @@ public class SecurityConfig {
                         // Try to create/update the user in DB
                         User user = userRepository.findByEmail(email).orElseGet(User::new);
 
+                        boolean isNew = (user.getUserId() == null);
+
                         user.setEmail(email);
-                        user.setName(name != null ? name : "");
+
+                        String incomingName = name != null ? name.trim() : "";
+
+                        if (isNew || user.getName() == null || user.getName().isBlank()) {
+                            if (!incomingName.isBlank()) {
+                                user.setName(incomingName);
+                            }
+                            // if incomingName is blank, just leave whatever is there (or null)
+                        }
                         user.setProfilePicture(picture);
                         user.setOauthProvider(provider);  // "google" or "github"
                         user.setOauthId(oauthId);
