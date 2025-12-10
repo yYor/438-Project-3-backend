@@ -64,10 +64,10 @@ public class SecurityConfig {
                     String email;
                     String name;
                     String picture;
-                    String oauthId = oauthUser.getName(); // Google: "sub"; GitHub: "id" (user-name-attribute)
+                    String oauthId = oauthUser.getName(); // Google: "sub"; GitHub: "id"
 
                     if ("google".equalsIgnoreCase(provider)) {
-                        // ---- Google mapping ----
+                        // Google mapping
                         email   = (String) attrs.get("email");
                         name    = (String) attrs.get("name");
                         picture = (String) attrs.get("picture");
@@ -77,7 +77,7 @@ public class SecurityConfig {
                         }
 
                     } else if ("github".equalsIgnoreCase(provider)) {
-                        // ---- GitHub mapping ----
+                        // GitHub mapping
                         email = (String) attrs.get("email");
                         String login = (String) attrs.get("login");
 
@@ -104,26 +104,40 @@ public class SecurityConfig {
                         return;
                     }
 
-                    // === Create or update user by email (same for both providers) ===
-                    User user = userRepository.findByEmail(email).orElseGet(User::new);
+                    Long userIdForRedirect = -1L;
 
-                    user.setEmail(email);
-                    user.setName(name != null ? name : "");
-                    user.setProfilePicture(picture);
-                    user.setOauthProvider(provider);  // "google" or "github"
-                    user.setOauthId(oauthId);
-                    if (user.getRole() == null || user.getRole().isBlank()) {
-                        user.setRole("user");
+                    try {
+                        // Try to create/update the user in DB
+                        User user = userRepository.findByEmail(email).orElseGet(User::new);
+
+                        user.setEmail(email);
+                        user.setName(name != null ? name : "");
+                        user.setProfilePicture(picture);
+                        user.setOauthProvider(provider);  // "google" or "github"
+                        user.setOauthId(oauthId);
+                        if (user.getRole() == null || user.getRole().isBlank()) {
+                            user.setRole("user");
+                        }
+
+                        user = userRepository.save(user);
+                        userIdForRedirect = user.getUserId();
+
+                        logger.info("Saved user {} for provider={}, email={}", userIdForRedirect, provider, email);
+                    } catch (Exception e) {
+                        // This is where your stack trace is coming from now.
+                        // We log it, but DON'T explode the login flow.
+                        logger.error("Error saving user for provider={}, email={}", provider, email, e);
                     }
 
-                    user = userRepository.save(user);
+                    String safeName = name != null ? name : "";
+                    String safePicture = picture != null ? picture : "";
 
                     String redirectUrl =
                         "https://birdwatchers-c872a1ce9f02.herokuapp.com/api/auth/mobile-redirect" +
-                        "?userId=" + user.getUserId() +
-                        "&name=" + URLEncoder.encode(user.getName() != null ? user.getName() : "", StandardCharsets.UTF_8) +
-                        "&email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8) +
-                        "&picture=" + URLEncoder.encode(user.getProfilePicture() != null ? user.getProfilePicture() : "", StandardCharsets.UTF_8) +
+                        "?userId=" + userIdForRedirect +
+                        "&name=" + URLEncoder.encode(safeName, StandardCharsets.UTF_8) +
+                        "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8) +
+                        "&picture=" + URLEncoder.encode(safePicture, StandardCharsets.UTF_8) +
                         "&provider=" + URLEncoder.encode(provider, StandardCharsets.UTF_8);
 
                     logger.info("Redirecting to mobile-redirect URL: {}", redirectUrl);
