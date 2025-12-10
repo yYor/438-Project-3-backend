@@ -99,7 +99,7 @@ public class SightingController {
 
         if (s.getBird() != null) {
             dto.setBirdId(s.getBird().getBirdId());
-            dto.setBirdName(s.getBird().getbirdName()); // if your Bird entity really has this exact getter
+            dto.setBirdName(s.getBird().getBirdName()); // if your Bird entity really has this exact getter
         }
 
         if (s.getUser() != null) {
